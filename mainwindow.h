@@ -60,5 +60,6 @@ private:
     void drawEllipsePoints(int x, int y, int pixelCenterX, int pixelCenterY, int r, int g, int b, int gridOffset);
     QSet<QPoint> make_polygon(int n);
     QSet<QPoint> allPolygonPoints;
+    QColor getPixelColor(int x, int y);
 };
 #endif // MAINWINDOW_H
