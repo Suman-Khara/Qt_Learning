@@ -141,7 +141,7 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 
             int calcX = centerX + gridX * gridOffset + gridOffset / 2;
             int calcY = centerY - gridY * gridOffset - gridOffset / 2;
-
+            lastColor=getPixelColor(calcX, calcY);
             colorPoint(calcX, calcY, 0, 0, 255, gridOffset);
 
             return true;
@@ -651,10 +651,10 @@ void MainWindow::on_Polygon_Button_clicked()
     int n = ui->Polygon_Side_Count->value();
 
     // Get the set of points that make the polygon
-    QSet<QPoint> polygonPoints = make_polygon(n);
+    make_polygon(n);
 
     // If the set is empty, it means we don't have enough points
-    if (polygonPoints.isEmpty())
+    if (allPolygonPoints.isEmpty())
     {
         ui->Polygon_Label->setText("Not enough points");
         return;
@@ -664,7 +664,7 @@ void MainWindow::on_Polygon_Button_clicked()
     int r = 255, g = 165, b = 0; // Color Orange
     int gridOffset = (ui->gridOffset->value() == 0) ? 1 : ui->gridOffset->value();
 
-    for (const QPoint &pt : polygonPoints)
+    for (const QPoint &pt : allPolygonPoints)
     {
         colorPoint(pt.x(), pt.y(), r, g, b, gridOffset); // Simply color the points
         Delay;
@@ -674,6 +674,30 @@ void MainWindow::on_Polygon_Button_clicked()
     qint64 elapsed = timer.elapsed();
     ui->Polygon_Label->setText(QString::number(elapsed) + " ms");
 }
+class Edge {
+public:
+    QPoint p1, p2;               // Endpoints of the edge
+    QMap<int, int> yToXMap;       // Map storing x-coordinate for a given y-coordinate
+
+    // Constructor that takes two points and a QSet of points to build the map
+    Edge(const QPoint& point1, const QPoint& point2, const QSet<QPoint>& edgePoints)
+        : p1(point1), p2(point2)
+    {
+        // Populate the map with x-coordinates for each unique y-coordinate in the edge points
+        for (const QPoint& point : edgePoints) {
+            yToXMap[point.y()] = point.x();
+        }
+    }
+
+    // Function to retrieve the x-coordinate for a given y-coordinate
+    // Returns -1 if no corresponding x is found
+    int getXForY(int y) const {
+        if (yToXMap.contains(y)) {
+            return yToXMap[y];
+        }
+        return -1;  // No x-coordinate for this y
+    }
+};
 
 void MainWindow::on_Polygon_Scanline_Fill_clicked()
 {
@@ -709,8 +733,8 @@ void MainWindow::on_Flood_Fill_clicked()
     QStack<QPoint> stack;
     stack.push(seedPoint);
     // lekh stack;
-    QSet<QPoint> visited = allPolygonPoints;
     // lekh allPolygonPoints;
+    bool start=true;
     while (!stack.isEmpty())
     {
         QPoint point = stack.pop();
@@ -723,11 +747,11 @@ void MainWindow::on_Flood_Fill_clicked()
         {
             continue;
         }
-        if (!visited.contains({pixelX, pixelY}))
+        QColor color=getPixelColor(pixelX, pixelY);
+        if (color==lastColor || start)
         {
-
+            start=false;
             colorPoint(pixelX, pixelY, r, g, b, gridOffset);
-            visited.insert({pixelX, pixelY});
             Delay;
 
             stack.push(QPoint(x + 1, y));

@@ -61,5 +61,6 @@ private:
     QSet<QPoint> make_polygon(int n);
     QSet<QPoint> allPolygonPoints;
     QColor getPixelColor(int x, int y);
+    QColor lastColor;
 };
 #endif // MAINWINDOW_H
